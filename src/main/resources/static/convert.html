@@ -1,0 +1,109 @@
+<!--suppress CssNoGenericFontName -->
+<html>
+
+<head>
+    <title>转换接口测试</title>
+    <meta charset="utf8">
+
+
+    <style>
+        body {
+            margin: 0;
+            padding: 12px 6px;
+            font-family: 'Fira Code Retina', 'JetBrains Mono', 'Consolas', 等线, "Microsoft YaHei", "黑体";
+        }
+    </style>
+    <script src="axios.js"></script>
+    <script src="vue.global.js"></script>
+</head>
+
+
+<body>
+
+<div style="font-size: 28px">
+    demo page for testing geojson-to-shp convert API.
+</div>
+<div id="app">
+
+    <table>
+        <tr>
+            <td>
+                当前转换状态
+            </td>
+            <td>
+                {{state}}
+            </td>
+        </tr>
+        <tr>
+            <td>选择 geojson 文件</td>
+            <td>
+                <input type="file" ref="file"
+                       accept=".txt, .json, .geojson">
+            </td>
+        </tr>
+        <tr>
+            <td></td>
+            <td>
+                <button @click="clickConvert()">转换</button>
+            </td>
+        </tr>
+    </table>
+
+</div>
+
+
+</body>
+
+<script>
+    const { log } = console;
+    const app = {
+        data() {
+            return {
+                state: 'ready',
+                result: null,
+            };
+        },
+        methods: {
+            clickConvert() {
+                let file = this.$refs.file;
+
+                if(file == null || file.files[0] == null)
+                {
+                    this.result = null;
+                    return;
+                }
+                this.state = 'converting';
+
+                file = file.files[0];
+
+                const reader = new FileReader();
+                reader.readAsText(file, 'utf-8');
+                reader.onload = (e)=>{
+                    const filename = file.name;
+                    const filedata = reader.result;
+
+                    axios({
+                        url: '/convert/toSHP',
+                        method: 'post',
+                        params: { filename },
+                        headers: {'Content-Type': 'text/plain' },
+                        data: '' + filedata,
+                    })
+                    .then(response=>{
+                        this.state = 'ready';
+                        const uuid = response.data;
+                        window.open('/convert/download/'+uuid, '_blank').location;
+                    })
+                    .catch(e2=>{
+                        log(e2);
+                        this.state = 'error';
+                    });
+                };
+            },
+        },
+    };
+    Vue.createApp(app).mount("#app");
+
+</script>
+
+</html>
